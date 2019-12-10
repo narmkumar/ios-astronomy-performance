@@ -132,6 +132,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
+
         
         // Check for image in cache
         if let cachedImageData = cache.value(for: photoReference.id),
@@ -142,6 +143,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         // Start an operation to fetch image data
         let fetchOp = FetchPhotoOperation(photoReference: photoReference)
+        let filterOp = FilterImageOperation(fetchOperation: fetchOp)
         let cacheOp = BlockOperation {
             if let data = fetchOp.imageData {
                 self.cache.cache(value: data, for: photoReference.id)
@@ -165,6 +167,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         photoFetchQueue.addOperation(fetchOp)
         photoFetchQueue.addOperation(cacheOp)
+        imageFilteringQueue.addOperation(filterOp)
         OperationQueue.main.addOperation(completionOp)
         
         operations[photoReference.id] = fetchOp
@@ -175,6 +178,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     private let cache = Cache<Int, Data>()
     private let photoFetchQueue = OperationQueue()
+    private let imageFilteringQueue = OperationQueue()
     private var operations = [Int : Operation]()
     
     private var roverInfo: MarsRover? {
